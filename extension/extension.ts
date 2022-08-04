@@ -23,6 +23,7 @@
 import * as vscode from "vscode";
 import * as Net from "net";
 import * as path from "path";
+import {EXTENSION_ID} from "./constants";
 import {LuaDebugSession} from "./luaDebugSession";
 import {LaunchConfig, isCustomProgramConfig, LuaProgramConfig} from "./launchConfig";
 
@@ -97,7 +98,7 @@ const configurationProvider: vscode.DebugConfigurationProvider = {
             return abortLaunch("No path for debugger");
         }
 
-        const extension = vscode.extensions.getExtension("tomblind.local-lua-debugger-vscode");
+        const extension = vscode.extensions.getExtension(EXTENSION_ID);
         if (typeof extension === "undefined") {
             return abortLaunch("Failed to find extension path");
         }
