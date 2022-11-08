@@ -36,6 +36,8 @@ import {Send} from "./send";
 import {Breakpoint} from "./breakpoint";
 import {Thread, mainThread, mainThreadName, isThread} from "./thread";
 
+import * as tarantool from "tarantool";
+
 export interface Var {
     val: unknown;
     type: string;
@@ -509,12 +511,13 @@ export namespace Debugger {
                 if (!path) {
                     Send.error(`Bad expression: ${inp}`);
                 } else {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-                    const content: string | null = tarantool_builtin_module(`@${path}`);
+                    // eslint-disable-next-line max-len
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+                    const content: string | null = tarantool.debug.getsources(`@${path}`);
                     if (typeof content === "string") {
                         Send.result(content);
                     } else {
-                        Send.error(`Nullable tarantool_builtin_module response: @${path}`);
+                        Send.error(`Nullable tarantool.debug.getsources response: @${path}`);
                     }
                 }
             } else if (inp === "autocont" || inp === "autocontinue") {

@@ -1,1 +1,5 @@
-declare function tarantool_builtin_module(filePath: string): string | null;
+declare module "tarantool" {
+  export namespace debug {
+    export function getsources(filePath: string): string | null;
+  }
+}
