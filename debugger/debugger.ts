@@ -38,6 +38,12 @@ import {Thread, mainThread, mainThreadName, isThread} from "./thread";
 
 import * as tarantool from "tarantool";
 
+const luaTarantoolGetSources =
+  tarantool.debug.getsources ??
+  function (filePath: string): null {
+    return null;
+  };
+
 export interface Var {
     val: unknown;
     type: string;
@@ -513,7 +519,7 @@ export namespace Debugger {
                 } else {
                     // eslint-disable-next-line max-len
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-                    const content: string | null = tarantool.debug.getsources(`@${path}`);
+                    const content: string | null = luaTarantoolGetSources(`@${path}`);
                     if (typeof content === "string") {
                         Send.result(content);
                     } else {
