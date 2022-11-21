@@ -18,53 +18,24 @@ Beginning in version 0.3.0, projects which use sourcemaps to debug code transpil
 ---
 ## Usage
 
-### Lua Stand-Alone Interpreter
-To debug a Lua program using a stand-alone interpreter, set `lua-local.interpreter` in your user or workspace settings:
-
-!["lua-local.interpreter": "lua5.1"](resources/settings.png '"lua-local.interpreter": "lua5.1"')
+### Tarantool Lua Stand-Alone Interpreter
+To debug a Lua program using a stand-alone interpreter, set `lua-tarantool.interpreter` in your user or workspace settings.
 
 Alternatively, you can set the interpreter and file to run in `launch.json`:
 ```json
 {
   "configurations": [
     {
-      "type": "lua-local",
+      "type": "lua-tarantool",
       "request": "launch",
       "name": "Debug",
       "program": {
-        "lua": "lua5.1",
-        "file": "main.lua"
+        "file": "init.lua"
       }
     }
   ]
 }
 ```
-
-### Custom Lua Environment
-To debug using a custom Lua executable, you must set up your `launch.json` with the name/path of the executable and any additional arguments that may be needed.
-```json
-{
-  "configurations": [
-    {
-      "type": "lua-local",
-      "request": "launch",
-      "name": "Debug Custom Executable",
-      "program": {
-        "command": "executable"
-      },
-      "args": [
-        "${workspaceFolder}"
-      ]
-    }
-  ]
-}
-```
-You must then manually start the debugger in your Lua code:
-```lua
-require("lldebugger").start()
-```
-Note that the path to `lldebugger` will automatically be appended to the `LUA_PATH` environment variable, so it can be found by Lua.
-
 ---
 ## Requirements & Limitations
 - The Lua environment must support communication via either stdio or pipes (named pipes on Windows, fifos on Linux).

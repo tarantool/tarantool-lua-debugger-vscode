@@ -25,10 +25,10 @@ import * as Net from "net";
 import * as path from "path";
 import {EXTENSION_ID} from "./constants";
 import {LuaDebugSession} from "./luaDebugSession";
-import {LaunchConfig, isCustomProgramConfig, LuaProgramConfig} from "./launchConfig";
+import {LaunchConfig, TarantoolProgramConfig} from "./launchConfig";
 
 const enableServer = true;
-const debuggerType = "lua-local";
+const debuggerType = "lua-tarantool";
 const interpreterSetting = `${debuggerType}.interpreter`;
 
 function abortLaunch(message: string) {
@@ -53,29 +53,30 @@ const configurationProvider: vscode.DebugConfigurationProvider = {
             config.type = debuggerType;
         }
 
-        if (typeof config.program === "undefined" || !isCustomProgramConfig(config.program)) {
-            const luaConfig: Partial<LuaProgramConfig> = config.program ?? {};
-            if (typeof luaConfig.lua === "undefined") {
-                const luaBin: string | undefined = vscode.workspace.getConfiguration().get(interpreterSetting);
-                if (typeof luaBin === "undefined" || luaBin.length === 0) {
-                    return abortLaunch(
-                        `You must set "${interpreterSetting}" in your settings, or "program.lua" `
-                        + "in your launch.json, to debug with a lua interpreter."
-                    );
-                }
-                luaConfig.lua = luaBin;
+        const luaConfig: Partial<TarantoolProgramConfig> = {
+            tarantool: config.program?.tarantool,
+            file: config.program?.file,
+        };
+        if (typeof luaConfig.tarantool === "undefined") {
+            const luaBin: string | undefined = vscode.workspace.getConfiguration().get(interpreterSetting);
+            if (typeof luaBin === "undefined" || luaBin.length === 0) {
+                return abortLaunch(
+                    `You must set "${interpreterSetting}" in your settings, or "program.tarantool" `
+                    + "in your launch.json, to debug with a tarantool lua interpreter."
+                );
             }
-            if (typeof luaConfig.file === "undefined") {
-                if (typeof editor === "undefined"
-                    || editor.document.languageId !== "lua"
-                    || editor.document.isUntitled
-                ) {
-                    return abortLaunch("'program.file' not set in launch.json");
-                }
-                luaConfig.file = editor.document.uri.fsPath;
-            }
-            config.program = luaConfig as LuaProgramConfig;
+            luaConfig.tarantool = luaBin;
         }
+        if (typeof luaConfig.file === "undefined") {
+            if (typeof editor === "undefined"
+                || editor.document.languageId !== "lua"
+                || editor.document.isUntitled
+            ) {
+                return abortLaunch("'program.file' not set in launch.json");
+            }
+            luaConfig.file = editor.document.uri.fsPath;
+        }
+        config.program = luaConfig as TarantoolProgramConfig;
 
         if (Array.isArray(config.scriptFiles)) {
             const nonString = config.scriptFiles.find(p => typeof p !== "string");

@@ -1,1 +1,1 @@
-export const EXTENSION_ID = "usenko-timur.tarantool-local-lua-debugger-vscode";
+export const EXTENSION_ID = "tarantool.tarantool-lua-debugger-vscode";

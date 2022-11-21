@@ -1,9 +1,9 @@
 {
-  "name": "tarantool-local-lua-debugger-vscode",
-  "publisher": "usenko-timur",
-  "version": "0.3.3",
-  "description": "Tarantool Local Lua Debugger - tarantool local lua debugger with no dependencies",
-  "displayName": "Tarantool Local Lua Debugger",
+  "name": "tarantool-lua-debugger-vscode",
+  "publisher": "tarantool",
+  "version": "0.4.0",
+  "description": "Tarantool Lua Debugger - tarantool lua debugger with no dependencies",
+  "displayName": "Tarantool Lua Debugger",
   "icon": "resources/tarantool-logo-small_128x128.png",
   "repository": {
     "type": "github",
@@ -20,9 +20,6 @@
     "tstl",
     "typescripttolua",
     "typescript-to-lua",
-    "love",
-    "löve",
-    "corona",
     "tarantool"
   ],
   "scripts": {
@@ -59,12 +56,12 @@
   "contributes": {
     "configuration": [
       {
-        "title": "Local Lua Debugger",
+        "title": "Tarantool Lua Debugger",
         "properties": {
-          "lua-local.interpreter": {
+          "lua-tarantool.interpreter": {
             "type": "string",
-            "default": "",
-            "description": "Lua stand-alone interpreter to use when none is specified in launch.json"
+            "default": "tarantool",
+            "description": "Tarantool Lua stand-alone interpreter to use when none is specified in launch.json"
           }
         }
       }
@@ -76,8 +73,8 @@
     ],
     "debuggers": [
       {
-        "type": "lua-local",
-        "label": "Local Lua Debugger",
+        "type": "lua-tarantool",
+        "label": "Tarantool Lua Debugger",
         "program": "./extension/debugAdapter.js",
         "runtime": "node",
         "languages": [
@@ -85,20 +82,12 @@
         ],
         "initialConfigurations": [
           {
-            "name": "Debug Lua Interpreter",
-            "type": "lua-local",
+            "name": "Debug Tarantool Lua Interpreter",
+            "type": "lua-tarantool",
             "request": "launch",
             "program": {
-              "lua": "lua",
+              "tarantool": "tarantool",
               "file": "${file}"
-            }
-          },
-          {
-            "name": "Debug Custom Lua Environment",
-            "type": "lua-local",
-            "request": "launch",
-            "program": {
-              "command": "command"
             },
             "args": []
           }
@@ -172,10 +161,10 @@
                   {
                     "type": "object",
                     "properties": {
-                      "lua": {
+                      "tarantool": {
                         "type": "string",
-                        "description": "Lua stand-alone interpreter to use",
-                        "default": "lua"
+                        "description": "Tarantool Lua stand-alone interpreter to use",
+                        "default": "tarantool"
                       },
                       "file": {
                         "type": "string",
@@ -183,29 +172,14 @@
                         "default": "${file}"
                       },
                       "communication": {
-                        "enum": ["stdio", "pipe"],
+                        "enum": [
+                          "stdio",
+                          "pipe"
+                        ],
                         "description": "Communication method between extension and debugger.",
                         "default": "stdio"
                       }
                     },
-                    "additionalProperties": false
-                  },
-                  {
-                    "type": "object",
-                    "properties": {
-                      "command": {
-                        "type": "string",
-                        "description": "The custom command to run"
-                      },
-                      "communication": {
-                        "enum": ["stdio", "pipe"],
-                        "description": "Communication method between extension and debugger.",
-                        "default": "stdio"
-                      }
-                    },
-                    "required": [
-                      "command"
-                    ],
                     "additionalProperties": false
                   }
                 ]

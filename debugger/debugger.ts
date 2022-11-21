@@ -38,11 +38,10 @@ import {Thread, mainThread, mainThreadName, isThread} from "./thread";
 
 import * as tarantool from "tarantool";
 
-const luaTarantoolGetSources =
-  tarantool.debug.getsources ??
-  function (filePath: string): null {
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+const luaTarantoolGetSources = tarantool.debug.getsources ?? function(filePath: string) {
     return null;
-  };
+};
 
 export interface Var {
     val: unknown;
