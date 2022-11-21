@@ -36,6 +36,13 @@ import {Send} from "./send";
 import {Breakpoint} from "./breakpoint";
 import {Thread, mainThread, mainThreadName, isThread} from "./thread";
 
+import * as tarantool from "tarantool";
+
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+const luaTarantoolGetSources = tarantool.debug.getsources ?? function(filePath: string) {
+    return null;
+};
+
 export interface Var {
     val: unknown;
     type: string;
@@ -504,7 +511,20 @@ export namespace Debugger {
 
             } else if (inp === "cont" || inp === "continue") {
                 break;
-
+            } else if (inp.sub(1, 23) === "tarantool-builtin-data ") {
+                const path = inp.sub(24);
+                if (!path) {
+                    Send.error(`Bad expression: ${inp}`);
+                } else {
+                    // eslint-disable-next-line max-len
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+                    const content: string | null = luaTarantoolGetSources(`@${path}`);
+                    if (typeof content === "string") {
+                        Send.result(content);
+                    } else {
+                        Send.error(`Nullable tarantool.debug.getsources response: @${path}`);
+                    }
+                }
             } else if (inp === "autocont" || inp === "autocontinue") {
                 updateHook();
                 inDebugBreak = false;

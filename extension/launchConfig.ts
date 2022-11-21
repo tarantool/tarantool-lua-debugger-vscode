@@ -20,21 +20,16 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //SOFTWARE.
 
-export interface LuaProgramConfig {
-    lua: string;
+export interface TarantoolProgramConfig {
+    tarantool?: string;
     file: string;
-    communication?: string;
-}
-
-export interface CustomProgramConfig {
-    command: string;
     communication?: string;
 }
 
 export interface LaunchConfig {
     extensionPath: string;
     workspacePath: string;
-    program: LuaProgramConfig | CustomProgramConfig;
+    program: TarantoolProgramConfig;
     args?: string[];
     cwd: string;
     env?: { [name: string]: string };
@@ -45,8 +40,4 @@ export interface LaunchConfig {
     stepUnmappedLines?: boolean;
     scriptFiles?: string[];
     ignorePatterns?: string[];
-}
-
-export function isCustomProgramConfig(config: LuaProgramConfig | CustomProgramConfig): config is CustomProgramConfig {
-    return typeof (config as CustomProgramConfig).command !== "undefined";
 }

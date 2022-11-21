@@ -1,0 +1,33 @@
+name: Bundle extension
+
+on:
+  push:
+    branches: [master]
+    tags: ['*']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16.8.0'
+
+      - uses: actions/cache@v3
+        with:
+          path: 'node_modules'
+          key: os-${{ runner.os }}-modules-${{ hashFiles('package-lock.json') }}
+
+      - run: npm ci
+
+      - run: npm run bundle
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: tarantool-lua-debugger-vscode
+          path: tarantool-lua-debugger-vscode-*.vsix

@@ -1,6 +1,6 @@
-# Local Lua Debugger for Visual Studio Code
+# Tarantool Lua Debugger for Visual Studio Code
 
-A simple Lua debugger which requires no additional dependencies.
+A simple Tarantool Lua debugger which requires no additional dependencies.
 
 ---
 ## Notice of Breaking Change
@@ -8,8 +8,7 @@ Beginning in version 0.3.0, projects which use sourcemaps to debug code transpil
 
 ---
 ## Features
-- Debug Lua using stand-alone interpretor or a custom executable
-- Supports Lua versions 5.1, 5.2, 5.3 and [LuaJIT](https://luajit.org/)
+- Debug Lua using Tarantool
 - Basic debugging features (stepping, inspecting, breakpoints, etc...)
 - Conditional breakpoints
 - Debug coroutines as separate threads
@@ -18,61 +17,37 @@ Beginning in version 0.3.0, projects which use sourcemaps to debug code transpil
 ---
 ## Usage
 
-### Lua Stand-Alone Interpreter
-To debug a Lua program using a stand-alone interpreter, set `lua-local.interpreter` in your user or workspace settings:
-
-!["lua-local.interpreter": "lua5.1"](resources/settings.png '"lua-local.interpreter": "lua5.1"')
+### Tarantool Lua Interpreter
+To debug a Lua program using particular Tarantool executable, set `lua-tarantool.tarantool` in your user or workspace settings.
 
 Alternatively, you can set the interpreter and file to run in `launch.json`:
 ```json
 {
   "configurations": [
     {
-      "type": "lua-local",
+      "type": "lua-tarantool",
       "request": "launch",
       "name": "Debug",
       "program": {
-        "lua": "lua5.1",
-        "file": "main.lua"
+        "tarantool": "<path to tarantool executable>",
+        "file": "${file}"
       }
     }
   ]
 }
 ```
-
-### Custom Lua Environment
-To debug using a custom Lua executable, you must set up your `launch.json` with the name/path of the executable and any additional arguments that may be needed.
-```json
-{
-  "configurations": [
-    {
-      "type": "lua-local",
-      "request": "launch",
-      "name": "Debug Custom Executable",
-      "program": {
-        "command": "executable"
-      },
-      "args": [
-        "${workspaceFolder}"
-      ]
-    }
-  ]
-}
-```
-You must then manually start the debugger in your Lua code:
-```lua
-require("lldebugger").start()
-```
-Note that the path to `lldebugger` will automatically be appended to the `LUA_PATH` environment variable, so it can be found by Lua.
-
 ---
 ## Requirements & Limitations
-- The Lua environment must support communication via either stdio or pipes (named pipes on Windows, fifos on Linux).
-  - Some enviroments may require command line options to support stdio communication (ex. Solar2D requires `/no-console` flag)
+- The Lua environment must support communication via either stdio or pipes.
+  - Some environments may require command line options to support stdio communication (ex. Solar2D requires `/no-console` flag)
   - Use of `io.read` or other calls that require user input will cause problems in stdio mode. Set [`program.communication`](#program.communication) to `pipe` to work around this.
 - The Lua environment must be built with the `debug` library, and no other code should attempt to set debug hooks.
 - You cannot manually pause debugging while the program is running.
 - In Lua 5.1 and LuaJIT, the main thread cannot be accessed while stopped inside of a coroutine.
+
+---
+
+Note that the path to `lldebugger` will automatically be appended to the `LUA_PATH` environment variable, so it can be found by Lua.
 
 ---
 ## Tips
@@ -150,235 +125,3 @@ Possible values:
 #### `verbose`
 
 Enable verbose output from debugger. Only useful when trying to identify problems with the debugger itself.
-
----
-## Custom Environment Examples
-
-### LÖVE
-
-```json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Debug Love",
-      "type": "lua-local",
-      "request": "launch",
-      "program": {
-        "command": "love"
-      },
-      "args": [
-        "game"
-      ],
-      "scriptRoots": [
-        "game"
-      ]
-    }
-  ]
-}
-```
-```lua
-if os.getenv("LOCAL_LUA_DEBUGGER_VSCODE") == "1" then
-  require("lldebugger").start()
-end
-
-function love.load()
-  ...
-```
-
-**Note** that `console` must be set to `false` (the default value) in `conf.lua`, or the debugger will not be able to communicate with the running program.
-
-**game/conf.lua**
-
-```lua
-function love.conf(t)
-  t.console = false
-end
-```
-
-### Busted
-
-Note that even when using busted via a lua interpreter, it must be set up as a custom environment to work correctly.
-
-```json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Debug Busted CLI",
-      "type": "lua-local",
-      "request": "launch",
-      "program": {
-        "command": "busted"
-      },
-      "args": [
-        "test/start-cli.lua"
-      ],
-      "ignorePatterns": "^/usr"
-    },
-    {
-      "name": "Debug Busted via Lua Interpreter",
-      "type": "lua-local",
-      "request": "launch",
-      "program": {
-        "command": "lua"
-      },
-      "args": [
-        "test/start-interpreter.lua"
-      ],
-      "ignorePatterns": "^/usr"
-    }
-  ]
-}
-```
-
-**test/start-cli.lua**
-
-```lua
-if os.getenv("LOCAL_LUA_DEBUGGER_VSCODE") == "1" then
-  require("lldebugger").start()
-end
-
-describe("a test", function()
-  ...
-end)
-```
-
-**test/start-interpreter.lua**
-
-```lua
---busted should be required before hooking debugger to avoid double-hooking
-require("busted.runner")()
-
-if os.getenv("LOCAL_LUA_DEBUGGER_VSCODE") == "1" then
-  require("lldebugger").start()
-end
-
-describe("a test", function()
-  ...
-end)
-```
-
-### Defold
-
-```js
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Debug",
-      "type": "lua-local",
-      "request": "launch",
-      "program": {
-        "command": "dmengine"
-      },
-      "args": ["./build/default/game.projectc"],
-      "scriptRoots": ["."] // Required for debugger to find scripts
-    }
-  ]
-}
-```
-
-```lua
-if os.getenv("LOCAL_LUA_DEBUGGER_VSCODE") == "1" then
-  local lldebugger = loadfile(os.getenv("LOCAL_LUA_DEBUGGER_FILEPATH"))()
-  lldebugger.start()
-end
-
-function init(self)
-  ...
-end
-```
-
-Information on downloading dmengine for your platform can be found [here](https://forum.defold.com/t/editor-2-dmengine-versions/9605).
-
-### Solar2D / Corona
-
-```json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Debug",
-      "type": "lua-local",
-      "request": "launch",
-      "windows": {
-        "program": {
-          "command": "C:\\Program Files (x86)\\Corona Labs\\Corona\\Corona Simulator.exe",
-        },
-        "args": [
-          "/no-console",
-          "/debug",
-          "${workspaceFolder}\\main.lua"
-        ]
-      },
-      "osx": {
-        "program": {
-          "command": "/Applications/Corona/CoronaSimulator.app/Contents/MacOS/CoronaSimulator",
-        },
-        "args": [
-          "-no-console"
-          "YES"
-          "-debug"
-          "1"
-          "-project"
-          "${workspaceFolder}/main.lua"
-        ]
-      }
-    }
-  ]
-}
-```
-
-```lua
-if os.getenv("LOCAL_LUA_DEBUGGER_VSCODE") == "1" then
-  local lldebugger = loadfile(os.getenv("LOCAL_LUA_DEBUGGER_FILEPATH"))()
-  lldebugger.start()
-end
-
-...
-```
-
-### TypescriptToLua (Custom Environment)
-
-```js
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Debug TSTL",
-      "type": "lua-local",
-      "request": "launch",
-      "program": {
-        "command": "my_custom_environment"
-      },
-      "args": [
-        ...
-      ],
-      "scriptFiles": ["**/*.lua"] // Required for breakpoints in ts files to work
-    }
-  ]
-}
-```
-
-```lua
-if os.getenv("LOCAL_LUA_DEBUGGER_VSCODE") == "1" then
-  require("lldebugger").start()
-end
-
-...
-```
-
-**tsconfig.json**
-
-```js
-{
-  "compilerOptions": {
-    "sourceMap": true,
-    ...
-  },
-  "tstl": {
-    "noResolvePaths": ["lldebugger"] // Required so TSTL ignores the missing dependency
-  }
-}
-```

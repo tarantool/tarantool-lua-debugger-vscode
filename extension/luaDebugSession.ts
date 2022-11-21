@@ -40,8 +40,8 @@ import * as childProcess from "child_process";
 import * as path from "path";
 import * as fs from "fs";
 import {Message} from "./message";
-import {LaunchConfig, isCustomProgramConfig} from "./launchConfig";
-import {createFifoPipe, createNamedPipe, DebugPipe} from "./debugPipe";
+import {LaunchConfig} from "./launchConfig";
+import {createFifoPipe, DebugPipe} from "./debugPipe";
 
 interface MessageHandler<T extends LuaDebug.Message = LuaDebug.Message> {
     (msg: T): void;
@@ -213,7 +213,7 @@ export class LuaDebugSession extends LoggingDebugSession {
             env: Object.assign({}, process.env),
             cwd,
             shell: true,
-            detached: process.platform !== "win32"
+            detached: true,
         };
 
         if (typeof this.config.env !== "undefined") {
@@ -241,11 +241,7 @@ export class LuaDebugSession extends LoggingDebugSession {
 
         //Open pipes
         if (this.config.program.communication === "pipe") {
-            if (process.platform === "win32") {
-                this.debugPipe = createNamedPipe();
-            } else {
-                this.debugPipe = createFifoPipe();
-            }
+            this.debugPipe = createFifoPipe();
             this.debugPipe.open(
                 data => { void this.onDebuggerOutput(data); },
                 err => { this.showOutput(`${err}`, OutputCategory.Error); }
@@ -262,28 +258,22 @@ export class LuaDebugSession extends LoggingDebugSession {
         this.updateLuaPath("LUA_PATH", processOptions.env, true);
 
         //Launch process
-        let processExecutable: string;
-        let processArgs: string[];
-        if (isCustomProgramConfig(this.config.program)) {
-            processExecutable = `"${this.config.program.command}"`;
-            processArgs = typeof this.config.args !== "undefined" ? this.config.args : [];
+        const processExecutable = `"${this.config.program.tarantool}"`;
+        const configArgs = (typeof this.config.args !== "undefined")
+            ? `, ${this.config.args.map(a => `[[${a}]]`)}`
+            : "";
+        const processArgs: string[] = [
+            "-e",
+            "\"require 'strict'.off()\"",
+            "-e",
+            "\"require('lldebugger').runFile("
+            + `[[${this.config.program.file}]],`
+            + "true,"
+            + `{[-1]=[[${this.config.program.tarantool}]],[0]=[[${this.config.program.file}]]${configArgs}}`
+            + ")\""
+        ];
 
-        } else {
-            processExecutable = `"${this.config.program.lua}"`;
-            const programArgs = (typeof this.config.args !== "undefined")
-                ? `, ${this.config.args.map(a => `[[${a}]]`)}`
-                : "";
-            processArgs = [
-                "-e",
-                "\"require('lldebugger').runFile("
-                + `[[${this.config.program.file}]],`
-                + "true,"
-                + `{[-1]=[[${this.config.program.lua}]],[0]=[[${this.config.program.file}]]${programArgs}}`
-                + ")\""
-            ];
-        }
         this.process = childProcess.spawn(processExecutable, processArgs, processOptions);
-
         this.showOutput(
             `launching \`${processExecutable} ${processArgs.join(" ")}\` from "${cwd}"`,
             OutputCategory.Info
@@ -378,6 +368,28 @@ export class LuaDebugSession extends LoggingDebugSession {
         this.sendResponse(response);
     }
 
+    protected async sourceRequest(
+        response: DebugProtocol.SourceResponse,
+        args: DebugProtocol.SourceArguments,
+    ): Promise<void> {
+        if (args.source?.adapterData === "tarantool-builtin-data") {
+            const msg = await this.waitForCommandResponse(`tarantool-builtin-data ${args.source.path ?? ""}`);
+            if (msg.type === "result") {
+                const result = msg.results[0];
+                if (result.type === "string") {
+                    let content = result.value ?? "";
+
+                    content = content.replace(/^"/, "");
+                    content = content.replace(/"$/, "");
+
+                    response.body = {content};
+                }
+            }
+        }
+
+        this.sendResponse(response);
+    }
+
     protected async stackTraceRequest(
         response: DebugProtocol.StackTraceResponse,
         args: DebugProtocol.StackTraceArguments
@@ -414,7 +426,17 @@ export class LuaDebugSession extends LoggingDebugSession {
                 //Un-mapped source
                 const sourcePath = this.resolvePath(frame.source);
                 if (typeof source === "undefined" && typeof sourcePath !== "undefined") {
-                    source = new Source(path.basename(frame.source), sourcePath);
+                    if (sourcePath.indexOf("builtin/") === 0) {
+                        source = new Source(
+                            path.basename(frame.source),
+                            this.convertDebuggerPathToClient(sourcePath),
+                            1,
+                            "internal module",
+                            "tarantool-builtin-data"
+                        );
+                    } else {
+                        source = new Source(path.basename(frame.source), sourcePath);
+                    }
                 }
 
                 //Function name
@@ -671,11 +693,7 @@ export class LuaDebugSession extends LoggingDebugSession {
         this.showOutput("terminateRequest", OutputCategory.Request);
 
         if (this.process !== null) {
-            if (process.platform === "win32") {
-                childProcess.spawn("taskkill", ["/pid", this.assert(this.process.pid).toString(), "/f", "/t"]);
-            } else {
-                process.kill(-this.assert(this.process.pid), "SIGKILL");
-            }
+            process.kill(-this.assert(this.process.pid), "SIGKILL");
         }
 
         this.isRunning = false;
@@ -761,6 +779,10 @@ export class LuaDebugSession extends LoggingDebugSession {
     private resolvePath(filePath: string) {
         if (filePath.length === 0) {
             return;
+        }
+
+        if (filePath.indexOf("builtin/") === 0) {
+            return filePath;
         }
 
         const config = this.assert(this.config);
