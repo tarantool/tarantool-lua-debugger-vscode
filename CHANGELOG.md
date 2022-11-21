@@ -1,3 +1,6 @@
+## Version 0.4.0
+- Supported Tarantool
+
 ## Version 0.3.3
 - Added support for utf8 identifier names
 - Implemented pipe communication as an alternative to using stdio (use `"communication": "pipe"` under `"program"`)
