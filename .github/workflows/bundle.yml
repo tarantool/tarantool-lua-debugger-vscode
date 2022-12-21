@@ -28,5 +28,5 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: tarantool-lua-debugger-vscode
-          path: tarantool-lua-debugger-vscode-*.vsix
+          name: tarantool-lua-debugger
+          path: tarantool-lua-debugger-*.vsix
