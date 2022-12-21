@@ -1,13 +1,13 @@
 {
-  "name": "tarantool-lua-debugger-vscode",
-  "publisher": "tarantool",
-  "version": "0.4.0",
+  "name": "tarantool-lua-debugger",
+  "publisher": "tarantooldb",
+  "version": "0.4.1",
   "description": "Tarantool Lua Debugger - tarantool lua debugger with no dependencies",
   "displayName": "Tarantool Lua Debugger",
   "icon": "resources/tarantool-logo-small_128x128.png",
   "repository": {
     "type": "github",
-    "url": "https://github.com/usenko-timur/tarantool-local-lua-debugger-vscode.git"
+    "url": "https://github.com/tarantool/tarantool-lua-debugger-vscode.git"
   },
   "author": "usenko-timur@users.noreply.github.com",
   "license": "MIT",

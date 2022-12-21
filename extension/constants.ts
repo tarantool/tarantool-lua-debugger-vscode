@@ -1,1 +1,1 @@
-export const EXTENSION_ID = "tarantool.tarantool-lua-debugger-vscode";
+export const EXTENSION_ID = "tarantooldb.tarantool-lua-debugger";
