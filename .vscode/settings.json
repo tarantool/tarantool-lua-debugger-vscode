@@ -3,5 +3,6 @@
 	"eslint.workingDirectories": [
 		"./debugger",
 		"./extension"
-	]
+	],
+	"Lua.workspace.checkThirdParty": false
 }
