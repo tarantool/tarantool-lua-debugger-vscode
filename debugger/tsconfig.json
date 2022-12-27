@@ -21,7 +21,7 @@
         "noHeader": true,
         "luaBundle": "lldebugger.lua",
         "luaBundleEntry": "lldebugger.ts",
-        "luaLibImport": "none",
+        "luaLibImport": "require",
         "noResolvePaths": ["tarantool"]
     }
 }
