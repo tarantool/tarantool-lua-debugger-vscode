@@ -3,6 +3,10 @@
 **/*.lua.map
 **/tsconfig.json
 **/tslint.json
+**/.eslintignore
+**/.eslintrc.json
 .vscode
 .gitignore
 tests
+.github/
+debug-workspace/
