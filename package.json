@@ -1,7 +1,7 @@
 {
   "name": "tarantool-lua-debugger",
   "publisher": "tarantooldb",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Tarantool Lua Debugger - tarantool lua debugger with no dependencies",
   "displayName": "Tarantool Lua Debugger",
   "icon": "resources/tarantool-logo-small_128x128.png",
