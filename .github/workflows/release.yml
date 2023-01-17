@@ -3,6 +3,7 @@ name: Release extension
 on:
   push:
     tags: ['*']
+  workflow_dispatch:
 
 jobs:
   release:
@@ -26,12 +27,11 @@ jobs:
 
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
           body: Release ${{ github.ref }}
           draft: false
           prerelease: false
@@ -41,3 +41,10 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./tarantool-lua-debugger-*.vsix
+
+      - name: Publish to VSCode Marketplace
+        uses: lannonbr/vsce-action@3.0.0
+        with:
+          args: "publish -p $AZURE_TOKEN"
+        env:
+          AZURE_TOKEN: ${{ secrets.AZURE_TOKEN }}
