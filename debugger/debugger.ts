@@ -37,11 +37,21 @@ import {Breakpoint} from "./breakpoint";
 import {Thread, mainThread, mainThreadName, isThread} from "./thread";
 
 import * as tarantool from "tarantool";
+import {exports as fiber} from "fiber";
+import { LuaFiber } from "fiber";
 
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 const luaTarantoolGetSources = tarantool?.debug?.getsources ?? function(filePath: string) {
     return null;
 };
+
+const luaFiberCreate = fiber.create;
+const luaFiberNew = fiber.new;
+const luaFiberYield = fiber.yield;
+
+export function isFiber(val: unknown): val is LuaFiber {
+    return type(val) === "userdata" && (val as LuaFiber)?.id > 0;
+}
 
 export interface Var {
     val: unknown;
@@ -92,6 +102,7 @@ export namespace Debugger {
     const hookStack: HookType[] = [];
 
     const threadIds = setmetatable(new LuaTable<Thread, number | undefined>(), {__mode: "k"});
+    const fibers = setmetatable(new LuaTable<LuaFiber, number | undefined>(), {__mode: "k"});
     const threadStackOffsets = setmetatable(new LuaTable<Thread, number | undefined>(), {__mode: "k"});
     const mainThreadId = 1;
     threadIds.set(mainThread, mainThreadId);
@@ -499,7 +510,7 @@ export namespace Debugger {
         breakInThread = undefined;
         let frameOffset = activeThreadFrameOffset;
         let frame = 0;
-        let currentThread = activeThread;
+        let currentThread : Thread | undefined =  activeThread;
         let currentStack = activeStack;
         let info = luaAssert(currentStack[frame]);
         let source = Path.format(luaAssert(info.source));
@@ -1040,6 +1051,24 @@ export namespace Debugger {
         return threadId;
     }
 
+    function registerFiber(fiber_: LuaFiber | null) {
+        if (fiber_ == null) {
+            return null;
+        }
+        assert(!fibers.get(fiber_));
+        assert(isFiber(fiber_));
+
+        const fiberId = fiber_.id
+        fibers.set(fiber_, fiberId);
+
+        const [hook] = debug.gethook();
+        if (hook === debugHook) {
+            debug.sethook(debugHook, "l");
+        }
+
+        return fiberId;
+    }
+
     let canYieldAcrossPcall: boolean | undefined;
 
     function useXpcallInCoroutine() {
@@ -1104,6 +1133,45 @@ export namespace Debugger {
             return unpack(results, 2);
         }
         return resumer;
+    }
+
+    /** 
+      fiber.create() is a fiber_create() + fiber_start()
+      fiber.new() is a fiber_create() + fiber_wakeup()
+      We need to intercept control at the moment
+      we create fiber via fiber.new() [for registering it
+      in debugger threads list], but we have not way in Lua
+      to directly start fiber execution as fiber_start() is
+      **not** exported to Lua. But, at least we could yield.
+
+      The order of fiber switches will be messed entirely.
+      But who guaranteed it anyhow, anywhere>
+     */
+    function debuggerFiberCreate(
+            // start: boolean,
+            f: Function,
+            ...args: unknown[]
+    ): LuaFiber | null{
+        const originalFunc = f as DebuggableFunction;
+        function debugFunc(...args: unknown[]) {
+            function wrappedFunc() {
+                return originalFunc(...args);
+            }
+            const results = xpcall(wrappedFunc, breakForError);
+            if (results[0]) {
+                return unpack(results, 2);
+            } else {
+                skipNextBreak = true;
+                const message = mapSources(tostring(results[1]));
+                return luaError(message, 2);
+            }
+        }
+        const fiber_ = luaFiberNew(debugFunc, ...args);
+        // print(fiber_)
+        //print(type(fiber_))
+        registerFiber(fiber_);
+        luaFiberYield(); // FIXME - it messes up order or executaion
+        return fiber_;
     }
 
     //debug.traceback replacement for catching errors and mapping sources
@@ -1192,6 +1260,11 @@ export namespace Debugger {
         coroutine.create = luaCoroutineCreate;
         coroutine.wrap = luaCoroutineWrap;
         coroutine.resume = luaCoroutineResume;
+        // FIXME - don't repeat after us! That is bad, really bad!
+        //@ts-ignore
+        fiber.create = luaFiberCreate;
+        //@ts-ignore
+        fiber.new = luaFiberNew;
 
         debug.sethook();
 
@@ -1218,6 +1291,9 @@ export namespace Debugger {
         coroutine.create = (f: Function) => debuggerCoroutineCreate(f, breakInCoroutines);
         coroutine.wrap = debuggerCoroutineWrap;
         coroutine.resume = breakInCoroutines ? debuggerCoroutineResume : luaCoroutineResume;
+        // FIXME - don't repeat after us! That is bad, really bad!
+        //@ts-ignore
+        fiber.create = debuggerFiberCreate;
 
         const currentThread = coroutine.running();
         if (currentThread && !threadIds.get(currentThread)) {
