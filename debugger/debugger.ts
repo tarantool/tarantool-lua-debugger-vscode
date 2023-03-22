@@ -37,7 +37,7 @@ import {Breakpoint} from "./breakpoint";
 import {Thread, mainThread, mainThreadName, isThread} from "./thread";
 
 import * as tarantool from "tarantool";
-import {exports as fiber} from "fiber";
+import * as fiber from "fiber";
 import { LuaFiber } from "fiber";
 
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
