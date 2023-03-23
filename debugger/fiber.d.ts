@@ -1,16 +1,12 @@
-declare interface LuaFiber extends LuaUserData {
-  id : number;
-}
-
-export function isFiber(val: unknown): val is LuaFiber;
-
 declare module "fiber" {
-  let fiber: {
-    // new is a reserved keyword in TS, hence use JSON workaround
-    // https://typescripttolua.github.io/docs/advanced/writing-declarations#keyword-workarounds
-    new: (this: void, f: Function, ...args: unknown[]) => LuaFiber | null;
-    create: (this: void, f: Function, ...args: unknown[]) => LuaFiber | null;
-    // start: (this: void, fiber: LuaFiber) => void;
-    yield: (this: void) => void;
+  interface LuaFiber extends LuaUserData {
+    id : number;
   }
+
+  const new_: (this: void, f: Function, ...args: unknown[]) => LuaFiber | null;
+  const create: (this: void, f: Function, ...args: unknown[]) => LuaFiber | null;
+  const yield: (this: void) => void;
+
+  export { new_ as new, create, yield };
+  export type { LuaFiber };
 }

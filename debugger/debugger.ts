@@ -38,7 +38,7 @@ import {Thread, mainThread, mainThreadName, isThread} from "./thread";
 
 import * as tarantool from "tarantool";
 import * as fiber from "fiber";
-import { LuaFiber } from "fiber";
+import type {LuaFiber} from "fiber";
 
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 const luaTarantoolGetSources = tarantool?.debug?.getsources ?? function(filePath: string) {
@@ -49,8 +49,10 @@ const luaFiberCreate = fiber.create;
 const luaFiberNew = fiber.new;
 const luaFiberYield = fiber.yield;
 
-export function isFiber(val: unknown): val is LuaFiber {
-    return type(val) === "userdata" && (val as LuaFiber)?.id > 0;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
+export function isFiber(val: any): val is LuaFiber {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    return type(val) === "userdata" && "id" in val && typeof val.id === "number" && val.id > 0;
 }
 
 export interface Var {
@@ -510,7 +512,7 @@ export namespace Debugger {
         breakInThread = undefined;
         let frameOffset = activeThreadFrameOffset;
         let frame = 0;
-        let currentThread : Thread | undefined =  activeThread;
+        let currentThread: Thread | undefined = activeThread;
         let currentStack = activeStack;
         let info = luaAssert(currentStack[frame]);
         let source = Path.format(luaAssert(info.source));
@@ -1052,13 +1054,13 @@ export namespace Debugger {
     }
 
     function registerFiber(fiber_: LuaFiber | null) {
-        if (fiber_ == null) {
+        if (fiber_ === null) {
             return null;
         }
         assert(!fibers.get(fiber_));
         assert(isFiber(fiber_));
 
-        const fiberId = fiber_.id
+        const fiberId = fiber_.id;
         fibers.set(fiber_, fiberId);
 
         const [hook] = debug.gethook();
@@ -1135,7 +1137,7 @@ export namespace Debugger {
         return resumer;
     }
 
-    /** 
+    /**
       fiber.create() is a fiber_create() + fiber_start()
       fiber.new() is a fiber_create() + fiber_wakeup()
       We need to intercept control at the moment
@@ -1148,14 +1150,14 @@ export namespace Debugger {
       But who guaranteed it anyhow, anywhere>
      */
     function debuggerFiberCreate(
-            // start: boolean,
-            f: Function,
-            ...args: unknown[]
-    ): LuaFiber | null{
+        // start: boolean,
+        f: Function,
+        ...args: unknown[]
+    ): LuaFiber | null {
         const originalFunc = f as DebuggableFunction;
-        function debugFunc(...args: unknown[]) {
+        function debugFunc(...props: unknown[]) {
             function wrappedFunc() {
-                return originalFunc(...args);
+                return originalFunc(...props);
             }
             const results = xpcall(wrappedFunc, breakForError);
             if (results[0]) {
@@ -1170,7 +1172,7 @@ export namespace Debugger {
         // print(fiber_)
         //print(type(fiber_))
         registerFiber(fiber_);
-        luaFiberYield(); // FIXME - it messes up order or executaion
+        luaFiberYield(); // FIXME - it messes up order or execution
         return fiber_;
     }
 
