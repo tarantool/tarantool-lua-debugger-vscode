@@ -51,8 +51,9 @@ const luaFiberYield = fiber.yield;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/explicit-module-boundary-types
 export function isFiber(val: any): val is LuaFiber {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    return type(val) === "userdata" && "id" in val && typeof val.id === "number" && val.id > 0;
+    return val != null &&
+           type(val) === "userdata" &&
+           (val as LuaFiber)?.id() > 0;
 }
 
 export interface Var {
@@ -1060,7 +1061,7 @@ export namespace Debugger {
         assert(!fibers.get(fiber_));
         assert(isFiber(fiber_));
 
-        const fiberId = fiber_.id;
+        const fiberId = fiber_.id();
         fibers.set(fiber_, fiberId);
 
         const [hook] = debug.gethook();

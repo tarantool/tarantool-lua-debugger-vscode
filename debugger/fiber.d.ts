@@ -1,6 +1,6 @@
 declare module "fiber" {
   interface LuaFiber extends LuaUserData {
-    id : number;
+    id : () => number;
   }
 
   const new_: (this: void, f: Function, ...args: unknown[]) => LuaFiber | null;
