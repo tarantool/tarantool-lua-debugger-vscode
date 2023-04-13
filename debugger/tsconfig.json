@@ -22,6 +22,6 @@
         "luaBundle": "lldebugger.lua",
         "luaBundleEntry": "lldebugger.ts",
         "luaLibImport": "require",
-        "noResolvePaths": ["tarantool"]
+        "noResolvePaths": ["tarantool", "fiber"]
     }
 }
